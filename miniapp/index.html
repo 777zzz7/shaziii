@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Для самой любимой ❤️</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html, body { height:100%; overflow:hidden; }
+  body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 45%, #a18cd1 100%);
+    background-size: 200% 200%;
+    animation: bgmove 12s ease infinite;
+    color:#fff;
+    touch-action: manipulation;
+    user-select:none;
+  }
+  @keyframes bgmove { 0%,100%{background-position:0% 50%} 50%{background-position:100% 50%} }
+
+  /* плавающие сердечки на фоне */
+  .bg-heart { position:fixed; bottom:-40px; font-size:22px; opacity:.5; pointer-events:none;
+    animation: floatUp linear forwards; z-index:0; }
+  @keyframes floatUp { to { transform: translateY(-115vh) rotate(360deg); } }
+
+  .screen {
+    position:absolute; inset:0; display:flex; flex-direction:column;
+    align-items:center; justify-content:center; padding:24px; text-align:center;
+    opacity:0; pointer-events:none; transition:opacity 1.2s ease; z-index:2;
+  }
+  .screen.active { opacity:1; pointer-events:auto; }
+
+  .card {
+    background:rgba(255,255,255,.14);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border:1px solid rgba(255,255,255,.35);
+    border-radius:28px;
+    padding:30px 26px;
+    max-width:520px; width:100%;
+    box-shadow:0 20px 60px rgba(180,60,120,.35);
+  }
+
+  h1 { font-size:clamp(24px,6vw,44px); margin-bottom:14px; text-shadow:0 3px 14px rgba(150,40,90,.4); }
+  .big-text { font-size:clamp(19px,5vw,30px); line-height:1.55; font-weight:500; }
+
+  .btn-row { display:flex; gap:18px; justify-content:center; margin-top:28px; flex-wrap:wrap; }
+
+  button {
+    border:none; cursor:pointer; font-weight:700; color:#fff;
+    border-radius:999px; padding:16px 42px; font-size:20px;
+    transition: transform .25s ease, box-shadow .25s ease;
+    box-shadow:0 8px 24px rgba(0,0,0,.22);
+    position:relative;
+  }
+  button:active { transform:scale(.94); }
+
+  #btnYes  { background:linear-gradient(135deg,#ff2d78,#ff6a9e); }
+  #btnYes2 { background:linear-gradient(135deg,#ff2d78,#ff6a9e); transition: transform .35s cubic-bezier(.34,1.56,.64,1), box-shadow .3s; }
+
+  #btnNo, #btnNo2 {
+    background:linear-gradient(135deg,#8e9eab,#b8c2cc); color:#4a5560;
+    transition: left .35s cubic-bezier(.34,1.56,.64,1), top .35s cubic-bezier(.34,1.56,.64,1), transform .2s;
+    position:fixed; z-index:50;
+  }
+
+  .runaway { position:fixed; }
+
+  .heart-burst { position:fixed; font-size:26px; pointer-events:none; z-index:60;
+    animation: burst 1.4s ease-out forwards; }
+  @keyframes burst {
+    0% { transform:translate(0,0) scale(.6); opacity:1; }
+    100% { transform:translate(var(--dx), var(--dy)) scale(1.4); opacity:0; }
+  }
+
+  .pulse { animation: pulse 1.6s ease-in-out infinite; }
+  @keyframes pulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.07)} }
+
+  .final-heart { font-size:64px; animation:pulse 1.4s ease-in-out infinite; margin-bottom:10px; }
+  .hint { margin-top:18px; font-size:14px; opacity:.85; }
+</style>
+</head>
+<body>
+
+<!-- ЭКРАН 0: хочешь открыть? -->
+<div class="screen active" id="s0">
+  <div class="card">
+    <h1>💌 Привет, Шасанем…</h1>
+    <p class="big-text">У меня для тебя что-то очень важное.<br>Хочешь открыть?</p>
+    <div class="btn-row">
+      <button id="btnYes" onclick="goStage(1)">Да 💖</button>
+      <button id="btnNo">Нет</button>
+    </div>
+    <p class="hint">(подсказка: от «нет» не убежать 😏)</p>
+  </div>
+</div>
+
+<!-- ЭКРАН 1: признание -->
+<div class="screen" id="s1">
+  <div class="card">
+    <p class="big-text" id="loveText"></p>
+    <div class="btn-row">
+      <button id="btnNext" style="display:none" class="pulse" onclick="goStage(2)">Дальше 💍</button>
+    </div>
+  </div>
+</div>
+
+<!-- ЭКРАН 2: предложение -->
+<div class="screen" id="s2">
+  <div class="card">
+    <p class="big-text">Тогда слушай внимательно…</p>
+    <div class="btn-row">
+      <button id="btnYes2" onclick="sayYes()">Да 💍</button>
+      <button id="btnNo2">Нет</button>
+    </div>
+    <p class="hint">(кнопка «да» только растёт, пока «нет» убегает 😄)</p>
+  </div>
+</div>
+
+<!-- ЭКРАН 3: предложение руки и сердца -->
+<div class="screen" id="s3">
+  <div class="card">
+    <h1>💍</h1>
+    <p class="big-text" id="proposalText"></p>
+    <div class="btn-row">
+      <button id="btnYes3" style="display:none" class="pulse" onclick="finalYes()">Да, я согласна! 💖</button>
+    </div>
+  </div>
+</div>
+
+<!-- ЭКРАН 4: финал -->
+<div class="screen" id="s4">
+  <div class="card">
+    <div class="final-heart">💞</div>
+    <p class="big-text" id="finalText"></p>
+  </div>
+</div>
+
+<script>
+  // Telegram Mini App инициализация
+  const tg = window.Telegram.WebApp;
+  tg.ready(); tg.expand();
+  tg.setHeaderColor('#ff9a9e'); tg.setBackgroundColor('#ff9a9e');
+
+  const haptic = (type='light') => {
+    try { tg.HapticFeedback.impactOccurred(type); } catch(e){}
+  };
+  const hapticOk = () => { try { tg.HapticFeedback.notificationOccurred('success'); } catch(e){} };
+
+  // === Фоновые сердечки ===
+  setInterval(() => {
+    const h = document.createElement('div');
+    h.className = 'bg-heart';
+    h.textContent = ['❤️','🩷','💖','💗','💝'][Math.floor(Math.random()*5)];
+    h.style.left = Math.random()*100 + 'vw';
+    h.style.fontSize = (14 + Math.random()*24) + 'px';
+    h.style.animationDuration = (6 + Math.random()*6) + 's';
+    document.body.appendChild(h);
+    setTimeout(() => h.remove(), 12000);
+  }, 700);
+
+  // === Переход между экранами ===
+  function goStage(n) {
+    haptic('medium');
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    const el = document.getElementById('s' + n);
+    setTimeout(() => el.classList.add('active'), 150);
+
+    if (n === 1) typeText('loveText',
+      'Шасанем, моё солнышко… ☀️
+
+' +
+      'Я люблю тебя больше, чем слова могут передать. ' +
+      'Люблю твою улыбку, твой смех, твои глаза. ' +
+      'С тобой каждый день — как праздник, а каждая ночь — как сказка. ' +
+      'Ты — моя самая любимая, самая родная, самая лучшая на всей планете. ' +
+      'Моё сердце бьётся только для тебя. ❤️',
+      () => { document.getElementById('btnNext').style.display = 'inline-block'; });
+    if (n === 2) setupRunaway('btnNo2', 'btnYes2');
+    if (n === 3) typeText('proposalText',
+      'Шасанем… Я хочу просить тебя самого главного. 🥹
+
+' +
+      'Выйдешь ли ты за меня? 💍
+' +
+      'Станешь моей женой, моей семьёй, моим всем?',
+      () => { document.getElementById('btnYes3').style.display = 'inline-block'; });
+    if (n === 4) typeText('finalText',
+      'Ура-а-а!!! 🎉💞
+
+' +
+      'Мы поженимся! Теперь ты моя невеста, а я — самый счастливый человек на свете. ' +
+      'Я обещаю любить тебя, беречь тебя и делать счастливой каждый день. ' +
+      'Ты — моя навсегда, Шасанем. Я люблю тебя бесконечно сильно. ❤️💍💖',
+      null, 30);
+  }
+
+  // === Печать текста по буквам (плавное появление) ===
+  function typeText(elId, text, done, speed=22) {
+    const el = document.getElementById(elId);
+    el.textContent = '';
+    let i = 0;
+    const iv = setInterval(() => {
+      el.textContent += text[i] ?? '';
+      if (i % 6 === 0) haptic('light');
+      if (++i >= text.length) { clearInterval(iv); done && done(); }
+    }, speed);
+  }
+
+  // === Убегающая кнопка «Нет» ===
+  function moveButton(btn, pad=20) {
+    const w = btn.offsetWidth, h = btn.offsetHeight;
+    const x = pad + Math.random() * (window.innerWidth - w - pad*2);
+    const y = pad + Math.random() * (window.innerHeight - h - pad*2);
+    btn.style.position = 'fixed';
+    btn.style.left = x + 'px';
+    btn.style.top  = y + 'px';
+    btn.style.zIndex = 50;
+  }
+
+  function setupRunaway(noId, yesId) {
+    const no = document.getElementById(noId);
+    const yes = document.getElementById(yesId);
+    let scale = 1;
+    const escape = (e) => {
+      e.preventDefault();
+      haptic('heavy');
+      moveButton(no);
+      scale = Math.min(scale + 0.18, 2.6);
+      yes.style.transform = `scale(${scale})`;
+      yes.style.boxShadow = `0 8px ${20 + scale*14}px rgba(255,45,120,${0.25 + scale*0.2})`;
+      if (scale > 1.8) no.textContent = 'не-а 😅';
+    };
+    no.addEventListener('pointerenter', escape);
+    no.addEventListener('touchstart', escape, { passive:false });
+    no.addEventListener('click', escape);
+    moveButton(no); // сразу уводим от пальца
+  }
+
+  // кнопка «Нет» на первом экране тоже убегает
+  setupRunaway('btnNo', 'btnYes');
+
+  // === «Да» на втором экране → экран предложения ===
+  function sayYes() {
+    hapticOk();
+    burstHearts(window.innerWidth/2, window.innerHeight/2, 18);
+    goStage(3);
+  }
+
+  // === Финальное «Да» ===
+  function finalYes() {
+    hapticOk();
+    try { tg.HapticFeedback.notificationOccurred('success'); } catch(e){}
+    burstHearts(window.innerWidth/2, window.innerHeight/2, 30);
+    goStage(4);
+  }
+
+  // === Взрыв сердечек ===
+  function burstHearts(cx, cy, count) {
+    for (let i = 0; i < count; i++) {
+      const h = document.createElement('div');
+      h.className = 'heart-burst';
+      h.textContent = ['❤️','💖','💗','💝','✨'][Math.floor(Math.random()*5)];
+      h.style.left = cx + 'px';
+      h.style.top  = cy + 'px';
+      const ang = Math.random() * Math.PI * 2;
+      const dist = 80 + Math.random() * 160;
+      h.style.setProperty('--dx', Math.cos(ang) * dist + 'px');
+      h.style.setProperty('--dy', Math.sin(ang) * dist + 'px');
+      document.body.appendChild(h);
+      setTimeout(() => h.remove(), 1500);
+    }
+  }
+</script>
+</body>
+</html>
